@@ -1,0 +1,4 @@
+/build/
+/artemis_results.json
+/artemis_results.csv
+__pycache__/
