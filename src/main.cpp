@@ -1,8 +1,10 @@
 #include "simulation.hpp"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -20,6 +22,18 @@ std::size_t parse_count(const char* value, const char* name) {
         return static_cast<std::size_t>(parsed);
     } catch (const std::exception&) {
         throw std::runtime_error(std::string(name) + " must be a positive integer");
+    }
+}
+
+// Rejects a results path that resolves outside the working directory, after
+// following "..", absolute paths and symlinks in the parts that exist.
+void require_inside_working_directory(const std::string& requested) {
+    namespace fs = std::filesystem;
+    const fs::path base = fs::weakly_canonical(fs::current_path());
+    const fs::path resolved = fs::weakly_canonical(base / requested);
+    const auto mismatch = std::mismatch(base.begin(), base.end(), resolved.begin(), resolved.end());
+    if (mismatch.first != base.end() || mismatch.second == resolved.end()) {
+        throw std::runtime_error("results path must stay inside the working directory: " + requested);
     }
 }
 
@@ -105,6 +119,7 @@ int main(int argc, char** argv) {
             const auto particles = argc > 2 ? parse_count(argv[2], "particles") : 2200;
             const auto frames = argc > 3 ? parse_count(argv[3], "frames") : 30;
             const std::string output = argc > 4 ? argv[4] : "artemis_results.json";
+            require_inside_working_directory(output);
             return benchmark(particles, frames, output);
         }
         if (mode == "stream") {
