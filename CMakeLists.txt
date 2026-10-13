@@ -18,3 +18,8 @@ add_executable(particle_life_tests tests/simulation_test.cpp)
 target_link_libraries(particle_life_tests PRIVATE particle_sim)
 target_compile_options(particle_life_tests PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME simulation COMMAND particle_life_tests)
+add_test(NAME benchmark_results_file
+         COMMAND ${CMAKE_COMMAND}
+                 -DBENCHMARK=$<TARGET_FILE:particle_life>
+                 -DRESULTS=${CMAKE_CURRENT_BINARY_DIR}/benchmark_test_results.json
+                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/benchmark_results_file.cmake)

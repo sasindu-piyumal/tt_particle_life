@@ -3,9 +3,11 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -20,6 +22,34 @@ std::size_t parse_count(const char* value, const char* name) {
         return static_cast<std::size_t>(parsed);
     } catch (const std::exception&) {
         throw std::runtime_error(std::string(name) + " must be a positive integer");
+    }
+}
+
+// Writes the file next to its destination and renames it into place, so a
+// reader never sees a truncated or partially written results file.
+void write_file_atomically(const std::string& path, const std::string& contents) {
+    namespace fs = std::filesystem;
+    fs::path temp_path(path);
+    temp_path += ".tmp";
+
+    std::ofstream output(temp_path);
+    if (!output) {
+        throw std::runtime_error("could not open results file: " + temp_path.string());
+    }
+    output << contents;
+    output.close();
+    if (!output) {
+        std::error_code ignored;
+        fs::remove(temp_path, ignored);
+        throw std::runtime_error("could not write results file: " + temp_path.string());
+    }
+
+    std::error_code error;
+    fs::rename(temp_path, path, error);
+    if (error) {
+        std::error_code ignored;
+        fs::remove(temp_path, ignored);
+        throw std::runtime_error("could not replace results file " + path + ": " + error.message());
     }
 }
 
@@ -40,11 +70,9 @@ int benchmark(std::size_t particle_count, std::size_t frame_count, const std::st
     const double fps = static_cast<double>(frame_count) / elapsed_seconds;
     const double frame_ms = elapsed_seconds * 1000.0 / static_cast<double>(frame_count);
 
-    std::ofstream output(output_path);
-    if (!output) {
-        throw std::runtime_error("could not open results file: " + output_path);
-    }
-    output << std::setprecision(12) << "{\"simulation_fps\":" << fps << "}\n";
+    std::ostringstream results;
+    results << std::setprecision(12) << "{\"simulation_fps\":" << fps << "}\n";
+    write_file_atomically(output_path, results.str());
 
     std::cout << std::fixed << std::setprecision(3)
               << "particles=" << particle_count << " frames=" << frame_count
