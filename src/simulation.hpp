@@ -27,9 +27,10 @@ public:
     static constexpr double height = 90.0;
     static constexpr std::size_t species_count = 5;
 
-private:
     static double wrapped_delta(double delta, double span);
     static double wrap(double value, double span);
+
+private:
 
     std::vector<Particle> particles_;
     std::vector<double> next_vx_;
