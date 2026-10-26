@@ -56,9 +56,10 @@ double Simulation::wrapped_delta(double delta, double span) {
 }
 
 double Simulation::wrap(double value, double span) {
-    if (value >= span) {
+    while (value >= span) {
         value -= span;
-    } else if (value < 0.0) {
+    }
+    while (value < 0.0) {
         value += span;
     }
     return value;
