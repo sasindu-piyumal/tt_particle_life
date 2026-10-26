@@ -3,6 +3,10 @@
 // a change to the header layout, frame layout, or particle ordering could
 // silently break the renderer without any test failing.
 
+// Must come before any system header so glibc declares popen()/pclose()
+// under the strict (non-gnu) C++17 standard this project builds with.
+#define _POSIX_C_SOURCE 200809L
+
 #include "simulation.hpp"
 
 #include <array>
